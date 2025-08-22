@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiritual Practice Rating System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        .rating-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .rating-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .rating-stars {
+            display: flex;
+            gap: 5px;
+        }
+        .star {
+            width: 30px;
+            height: 30px;
+            background-color: #e9ecef;
+            clip-path: polygon(50% 0%, 61.8% 38.8%, 100% 35%, 69.1% 62.5%, 82.5% 100%, 50% 75%, 17.5% 100%, 30.9% 62.5%, 0% 35%, 38.2% 38.8%);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .star.active {
+            background-color: #ffd700;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .nav-btn {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            transition: width 0.3s;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: white;
+            border-radius: 5px;
+        }
+        .summary-category {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-4xl mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center text-indigo-800 mb-8">Spiritual Practice Rating System</h1>
+        
+        <!-- Page 1: Rating Form -->
+        <div id="page1" class="page active">
+            <div class="rating-container">
+                <div class="flex justify-between mb-4">
+                    <div class="w-1/2 pr-2">
+                        <label class="block text-gray-700 font-bold mb-2" for="teacher">Select Teacher:</label>
+                        <select id="teacher" class="w-full p-2 border rounded">
+                            <option value="">-- Select Teacher --</option>
+                            <option value="ranveer">Ranveer Sir</option>
+                            <option value="swamiji">Swamiji</option>
+                            <option value="sunil">Sunil Sir</option>
+                        </select>
+                    </div>
+                    <div class="w-1/2 pl-2">
+                        <label class="block text-gray-700 font-bold mb-2" for="activity">Select Activity:</label>
+                        <select id="activity" class="w-full p-2 border rounded">
+                            <option value="">-- Select Activity --</option>
+                            <option value="puja">Puja</option>
+                            <option value="assembly">Assembly</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Puja Rating Options -->
+                <div id="puja-ratings" style="display: none;">
+                    <h2 class="text-xl font-semibold text-purple-700 mb-4">Puja Performance Rating</h2>
+                    
+                    <div class="rating-item">
+                        <span>SITTING</span>
+                        <div class="rating-stars" data-category="sitting">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>TILAK-TIKA</span>
+                        <div class="rating-stars" data-category="tilak">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>FOLLOW INSTRUCTION</span>
+                        <div class="rating-stars" data-category="instructions">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>AARTI</span>
+                        <div class="rating-stars" data-category="aarti">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>KIRTAN</span>
+                        <div class="rating-stars" data-category="kirtan">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>DANDWAT/PRADAKSHNA</span>
+                        <div class="rating-stars" data-category="dandwat">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>DARSHAN</span>
+                        <div class="rating-stars" data-category="darshan">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>Yesterday study ON TIME / 100% INVOLVEMENT</span>
+                        <div class="rating-stars" data-category="study_time">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>STUDY HOUR</span>
+                        <div class="rating-stars" data-category="study_hour">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>OVERALL PUJA</span>
+                        <div class="rating-stars" data-category="overall_puja">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assembly Rating Options -->
+                <div id="assembly-ratings" style="display: none;">
+                    <h2 class="text-xl font-semibold text-blue-700 mb-4">Assembly Performance Rating</h2>
+                    
+                    <div class="rating-item">
+                        <span>SITTING</span>
+                        <div class="rating-stars" data-category="assembly_sitting">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>JANMAGAL</span>
+                        <div class="rating-stars" data-category="janmagal">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>ARTI</span>
+                        <div class="rating-stars" data-category="assembly_arti">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>Stuti Prathna</span>
+                        <div class="rating-stars" data-category="stuti">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>1ST KIRTAN</span>
+                        <div class="rating-stars" data-category="kirtan1">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>2ND KIRTAN</span>
+                        <div class="rating-stars" data-category="kirtan2">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>DHUN</span>
+                        <div class="rating-stars" data-category="dhun">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div the="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>KATHA</span>
+                        <div class="rating-stars" data-category="katha">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>MANSI PUJA</span>
+                        <div class="rating-stars" data-category="mansi">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rating-item">
+                        <span>STUDY HOUR</span>
+                        <div class="rating-stars" data-category="assembly_study">
+                            <div class="star" data-value="1"></div>
+                            <div class="star" data-value="2"></div>
+                            <div class="star" data-value="3"></div>
+                            <div class="star" data-value="4"></div>
+                            <div class="star" data-value="5"></div>
+                            <div class="star" data-value="6"></div>
+                            <div class="star" data-value="7"></div>
+                            <div class="star" data-value="8"></div>
+                            <div class="star" data-value="9"></div>
+                            <div class="star" data-value="10"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center mt-8">
+                    <button id="submitBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                        SUBMIT RATINGS
+                    </button>
+                    <button id="viewResultsBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg ml-4 transition duration-300 ease-in-out transform hover:scale-105">
+                        VIEW RESULTS
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 2: Results -->
+        <div id="page2" class="page">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-center text-indigo-800 mb-6">Student Performance Report</h2>
+                
+                <div class="flex flex-col md:flex-row mb-6">
+                    <div class="w-full md:w-1/3 pr-0 md:pr-4 mb-4 md:mb-0">
+                        <div class="bg-indigo-100 p-4 rounded-lg">
+                            <h3 class="font-bold text-indigo-800 text-lg mb-2">Summary</h3>
+                            <div id="summaryList"></div>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-2/3">
+                        <div class="flex justify-end mb-4">
+                            <select id="timeframeSelect" class="p-2 border rounded">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                            <select id="teacherFilter" class="ml-2 p-2 border rounded">
+                                <option value="all">All Teachers</option>
+                                <option value="ranveer">Ranveer Sir</option>
+                                <option value="swamiji">Swamiji</option>
+                                <option value="sunil">Sunil Sir</option>
+                            </select>
+                        </div>
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="font-bold text-lg text-indigo-800 mb-3">Recent Ratings</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                            <thead class="bg-indigo-800 text-white">
+                                <tr>
+                                    <th class="py-3 px-4">Date</th>
+                                    <th class="py-3 px-4">Activity</th>
+                                    <th class="py-3 px-4">Teacher</th>
+                                    <th class="py-3 px-4">Score</th>
+                                    <th class="py-3 px-4">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ratingsTable" class="divide-y divide-gray-200">
+                                <!-- Ratings will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center mt-6">
+                    <button id="backBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                        BACK TO RATING
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDLw4B7jsMxX1WrkrOTJnFDQzIHQQD6iO0",
+  authDomain: "rating-7093b.firebaseapp.com",
+  projectId: "rating-7093b",
+  storageBucket: "rating-7093b.firebasestorage.app",
+  messagingSenderId: "283283203023",
+  appId: "1:283283203023:web:127d2876c2bee4173ea8ba",
+  measurementId: "G-EHEBWNX5Z1"
+};
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const ratingsRef = database.ref('ratings'); // Reference to your 'ratings' node
+
+        // Store ratings data (local state, will be synced with Firebase)
+        let ratingsData = {
+            teacher: '',
+            activity: '',
+            puja: {
+                sitting: 0,
+                tilak: 0,
+                instructions: 0,
+                aarti: 0,
+                kirtan: 0,
+                dandwat: 0,
+                darshan: 0,
+                study_time: 0,
+                study_hour: 0,
+                overall_puja: 0
+            },
+            assembly: {
+                sitting: 0,
+                janmagal: 0,
+                arti: 0,
+                stuti: 0,
+                kirtan1: 0,
+                kirtan2: 0,
+                dhun: 0,
+                katha: 0,
+                mansi: 0,
+                study_hour: 0
+            },
+            history: [] // This will be populated from Firebase
+        };
+
+        // DOM elements
+        const teacherSelect = document.getElementById('teacher');
+        const activitySelect = document.getElementById('activity');
+        const pujaRatings = document.getElementById('puja-ratings');
+        const assemblyRatings = document.getElementById('assembly-ratings');
+        const submitBtn = document.getElementById('submitBtn');
+        const viewResultsBtn = document.getElementById('viewResultsBtn');
+        const page1 = document.getElementById('page1');
+        const page2 = document.getElementById('page2');
+        const backBtn = document.getElementById('backBtn');
+        const summaryList = document.getElementById('summaryList');
+        const ratingsTable = document.getElementById('ratingsTable');
+        const performanceChart = document.getElementById('performanceChart');
+        const timeframeSelect = document.getElementById('timeframeSelect');
+        const teacherFilter = document.getElementById('teacherFilter');
+        
+        // Initialize star ratings
+        function initStars() {
+            const stars = document.querySelectorAll('.star');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const starContainer = this.parentElement;
+                    const category = starContainer.dataset.category;
+                    const value = parseInt(this.dataset.value);
+                    
+                    // Highlight stars up to clicked one
+                    starContainer.querySelectorAll('.star').forEach((s, i) => {
+                        if (i < value) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                    
+                    // Store rating in appropriate object
+                    if (activitySelect.value === 'puja') {
+                        ratingsData.puja[category] = value;
+                    } else if (activitySelect.value === 'assembly') {
+                        ratingsData.assembly[category] = value;
+                    }
+                });
+            });
+        }
+
+        // Activity change handler
+        activitySelect.addEventListener('change', function() {
+            if (this.value === 'puja') {
+                pujaRatings.style.display = 'block';
+                assemblyRatings.style.display = 'none';
+            } else if (this.value === 'assembly') {
+                pujaRatings.style.display = 'none';
+                assemblyRatings.style.display = 'block';
+            } else {
+                pujaRatings.style.display = 'none';
+                assemblyRatings.style.display = 'none';
+            }
+        });
+
+        // Teacher change handler
+        teacherSelect.addEventListener('change', function() {
+            ratingsData.teacher = this.value;
+        });
+
+        // Submit ratings
+        submitBtn.addEventListener('click', function() {
+            if (!ratingsData.teacher) {
+                alert('Please select a teacher');
+                return;
+            }
+            
+            if (!activitySelect.value) {
+                alert('Please select an activity');
+                return;
+            }
+            
+            // Calculate average rating
+            let total = 0;
+            let categoryRatings = {};
+            
+            if (activitySelect.value === 'puja') {
+                categoryRatings = {...ratingsData.puja};
+            } else {
+                categoryRatings = {...ratingsData.assembly};
+            }
+            
+            // Filter out categories with 0 rating for average calculation
+            const ratedCategories = Object.keys(categoryRatings).filter(key => categoryRatings[key] > 0);
+            if (ratedCategories.length === 0) {
+                alert('Please provide ratings for at least one category.');
+                return;
+            }
+
+            for (const key of ratedCategories) {
+                total += categoryRatings[key];
+            }
+            
+            const average = total / ratedCategories.length;
+            
+            // Prepare data for Firebase
+            const newRatingEntry = {
+                date: new Date().toLocaleDateString('en-US'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP, // Use server timestamp
+                activity: activitySelect.value,
+                teacher: teacherSelect.options[teacherSelect.selectedIndex].text,
+                rating: average.toFixed(1),
+                categories: {...categoryRatings}
+            };
+            
+            // Push to Firebase
+            ratingsRef.push(newRatingEntry)
+                .then(() => {
+                    alert(`Ratings submitted successfully! Average rating: ${average.toFixed(1)}/10`);
+                    resetForm();
+                })
+                .catch(error => {
+                    console.error("Error writing to Firebase: ", error);
+                    alert("Failed to submit ratings. Please try again.");
+                });
+        });
+
+        // Function to reset the form
+        function resetForm() {
+            teacherSelect.value = '';
+            activitySelect.value = '';
+            pujaRatings.style.display = 'none';
+            assemblyRatings.style.display = 'none';
+            
+            // Clear stars
+            document.querySelectorAll('.star').forEach(star => {
+                star.classList.remove('active');
+            });
+            
+            // Reset rating data
+            ratingsData.puja = {
+                sitting: 0, tilak: 0, instructions: 0, aarti: 0, kirtan: 0,
+                dandwat: 0, darshan: 0, study_time: 0, study_hour: 0, overall_puja: 0
+            };
+            
+            ratingsData.assembly = {
+                sitting: 0, janmagal: 0, arti: 0, stuti: 0, kirtan1: 0,
+                kirtan2: 0, dhun: 0, katha: 0, mansi: 0, study_hour: 0
+            };
+        }
+
+        // View results
+        viewResultsBtn.addEventListener('click', function() {
+            if (ratingsData.history.length === 0) {
+                alert('No ratings data available yet. Please submit some ratings or wait for data to load.');
+                return;
+            }
+            
+            page1.classList.remove('active');
+            page2.classList.add('active');
+            
+            updateResultsPage();
+        });
+
+        // Back to rating
+        backBtn.addEventListener('click', function() {
+            page2.classList.remove('active');
+            page1.classList.add('active');
+        });
+
+        // Event listeners for filters
+        timeframeSelect.addEventListener('change', updateResultsPage);
+        teacherFilter.addEventListener('change', updateResultsPage);
+
+        // Helper function to get week number
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return d.getUTCFullYear() + '-W' + weekNo;
+        }
+
+        // Update results page
+        function updateResultsPage() {
+            const selectedTimeframe = timeframeSelect.value;
+            const selectedTeacher = teacherFilter.value;
+
+            let filteredHistory = ratingsData.history;
+            if (selectedTeacher !== 'all') {
+                const teacherFullName = Array.from(teacherSelect.options).find(opt => opt.value === selectedTeacher)?.text;
+                filteredHistory = filteredHistory.filter(entry => entry.teacher === teacherFullName);
+            }
+
+            // Calculate averages for summary
+            let pujaTotal = 0;
+            let pujaCount = 0;
+            let assemblyTotal = 0;
+            let assemblyCount = 0;
+            let teacherTotals = {};
+            let teacherCounts = {};
+            
+            filteredHistory.forEach(entry => {
+                if (entry.activity === 'puja') {
+                    pujaTotal += parseFloat(entry.rating);
+                    pujaCount++;
+                } else {
+                    assemblyTotal += parseFloat(entry.rating);
+                    assemblyCount++;
+                }
+                
+                if (!teacherTotals[entry.teacher]) {
+                    teacherTotals[entry.teacher] = 0;
+                    teacherCounts[entry.teacher] = 0;
+                }
+                teacherTotals[entry.teacher] += parseFloat(entry.rating);
+                teacherCounts[entry.teacher]++;
+            });
+            
+            // Create summary
+            summaryList.innerHTML = `
+                <div class="summary-item">
+                    <span class="summary-category">Overall Puja Average:</span>
+                    <span>${pujaCount > 0 ? (pujaTotal / pujaCount).toFixed(1) : 'N/A'}/10</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-category">Overall Assembly Average:</span>
+                    <span>${assemblyCount > 0 ? (assemblyTotal / assemblyCount).toFixed(1) : 'N/A'}/10</span>
+                </div>
+            `;
+            
+            for (const teacher in teacherTotals) {
+                summaryList.innerHTML += `
+                    <div class="summary-item">
+                        <span class="summary-category">${teacher}:</span>
+                        <span>${(teacherTotals[teacher] / teacherCounts[teacher]).toFixed(1)}/10</span>
+                    </div>
+                `;
+            }
+            
+            // Create ratings table
+            ratingsTable.innerHTML = '';
+            // Sort history by timestamp (most recent first)
+            const sortedHistory = [...filteredHistory].sort((a, b) => b.timestamp - a.timestamp);
+
+            sortedHistory.forEach(entry => {
+                ratingsTable.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 px-4">${entry.date}</td>
+                        <td class="py-3 px-4">${entry.activity.toUpperCase()}</td>
+                        <td class="py-3 px-4">${entry.teacher}</td>
+                        <td class="py-3 px-4">
+                            <span class="inline-block bg-indigo-100 text-indigo-800 py-1 px-2 rounded">${entry.rating}/10</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <button class="text-indigo-600 hover:text-indigo-800 font-medium" onclick="showDetails('${entry.date}', '${entry.activity}', '${entry.teacher}', ${entry.timestamp})">
+                                View Details
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            // Update chart
+            updateChart(filteredHistory, selectedTimeframe);
+        }
+
+        // Show details modal
+        window.showDetails = function(date, activity, teacher, timestamp) {
+            const entry = ratingsData.history.find(e => 
+                e.date === date && 
+                e.activity === activity.toLowerCase() && 
+                e.teacher === teacher &&
+                e.timestamp === timestamp // Use timestamp for unique identification
+            );
+            
+            if (entry) {
+                let detailsHtml = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">';
+                detailsHtml += '<div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">';
+                detailsHtml += `<h3 class="text-xl font-bold mb-2">Details for ${activity} on ${date} with ${teacher}</h3>`;
+                detailsHtml += `<p class="mb-4"><span class="font-bold">Overall Rating:</span> ${entry.rating}/10</p>`;
+                
+                detailsHtml += '<div class="grid grid-cols-2 gap-4">';
+                for (const category in entry.categories) {
+                    if (entry.categories[category] > 0) {
+                        detailsHtml += `
+                            <div class="bg-gray-100 p-3 rounded">
+                                <p class="font-bold">${category.toUpperCase().replace('_', ' ')}</p>
+                                <div class="flex mt-1">
+                                    <span class="mr-2">${entry.categories[category]}/10</span>
+                                    <div class="w-24 h-2 bg-gray-300 rounded-full overflow-hidden">
+                                        <div class="h-full bg-indigo-600" style="width: ${entry.categories[category] * 10}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                detailsHtml += '</div>';
+
+                detailsHtml += '<div class="mt-6"><canvas id="categoryChart"></canvas></div>';
+                
+                detailsHtml += '<button onclick="closeModal()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Close</button>';
+                detailsHtml += '</div></div>';
+                
+                document.body.insertAdjacentHTML('beforeend', detailsHtml);
+
+                setTimeout(() => {
+                    renderCategoryChart(entry.categories);
+                }, 0);
+            }
+        };
+
+        window.closeModal = function() {
+            const modal = document.querySelector('.fixed.inset-0');
+            if (modal) modal.remove();
+            if (window.categoryChartInst) {
+                window.categoryChartInst.destroy();
+            }
+        };
+
+        // Render category-wise chart
+        function renderCategoryChart(categories) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+
+            const colors = [
+                'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 159, 64, 0.6)',
+                'rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(201, 203, 207, 0.6)',
+                'rgba(255, 205, 86, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)',
+                'rgba(255, 159, 64, 0.6)'
+            ];
+            let colorIndex = 0;
+
+            for (const category in categories) {
+                if (categories[category] > 0) {
+                    labels.push(category.toUpperCase().replace('_', ' '));
+                    data.push(categories[category]);
+                    backgroundColors.push(colors[colorIndex % colors.length]);
+                    colorIndex++;
+                }
+            }
+
+            if (window.categoryChartInst) {
+                window.categoryChartInst.destroy();
+            }
+
+            window.categoryChartInst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Category Rating',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Individual Category Ratings'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Listen for data changes in Firebase
+        ratingsRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            const loadedHistory = [];
+            for (let key in data) {
+                loadedHistory.push(data[key]);
+            }
+            ratingsData.history = loadedHistory;
+            // If on the results page, update it with new data
+            if (page2.classList.contains('active')) {
+                updateResultsPage();
+            }
+        }, (errorObject) => {
+            console.log('The read failed: ' + errorObject.name);
+        });
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initStars();
+            // Initial load of results page if it's active (though typically it starts on page1)
+            if (page2.classList.contains('active')) {
+                updateResultsPage();
+            }
+        });
+    </script>
+</body>
+</html>
