@@ -109,6 +109,17 @@
                         </select>
                     </div>
                 </div>
+
+                <div class="flex justify-between mb-4">
+                    <div class="w-full pr-2">
+                        <label class="block text-gray-700 font-bold mb-2" for="studentType">Select Student Type:</label>
+                        <select id="studentType" class="w-full p-2 border rounded">
+                            <option value="">-- Select Type --</option>
+                            <option value="junior">Junior</option>
+                            <option value="senior">Senior</option>
+                        </select>
+                    </div>
+                </div>
                 
                 <!-- Puja Rating Options -->
                 <div id="puja-ratings" style="display: none;">
@@ -466,6 +477,7 @@
                     <div class="w-full md:w-2/3">
                         <div class="flex justify-end mb-4">
                             <select id="timeframeSelect" class="p-2 border rounded">
+                                <option value="all">All Time</option> <!-- Added All Time option -->
                                 <option value="daily">Daily</option>
                                 <option value="weekly">Weekly</option>
                                 <option value="monthly">Monthly</option>
@@ -475,6 +487,11 @@
                                 <option value="ranveer">Ranveer Sir</option>
                                 <option value="swamiji">Swamiji</option>
                                 <option value="sunil">Sunil Sir</option>
+                            </select>
+                            <select id="studentTypeFilter" class="ml-2 p-2 border rounded">
+                                <option value="all">All Students</option>
+                                <option value="junior">Junior</option>
+                                <option value="senior">Senior</option>
                             </select>
                         </div>
                         <canvas id="performanceChart"></canvas>
@@ -490,6 +507,7 @@
                                     <th class="py-3 px-4">Date</th>
                                     <th class="py-3 px-4">Activity</th>
                                     <th class="py-3 px-4">Teacher</th>
+                                    <th class="py-3 px-4">Type</th> <!-- Added Type column -->
                                     <th class="py-3 px-4">Score</th>
                                     <th class="py-3 px-4">Details</th>
                                 </tr>
@@ -531,6 +549,7 @@ const firebaseConfig = {
         let ratingsData = {
             teacher: '',
             activity: '',
+            studentType: '', // Added studentType to local state
             puja: {
                 sitting: 0,
                 tilak: 0,
@@ -561,6 +580,7 @@ const firebaseConfig = {
         // DOM elements
         const teacherSelect = document.getElementById('teacher');
         const activitySelect = document.getElementById('activity');
+        const studentTypeSelect = document.getElementById('studentType'); // New student type select
         const pujaRatings = document.getElementById('puja-ratings');
         const assemblyRatings = document.getElementById('assembly-ratings');
         const submitBtn = document.getElementById('submitBtn');
@@ -573,6 +593,7 @@ const firebaseConfig = {
         const performanceChart = document.getElementById('performanceChart');
         const timeframeSelect = document.getElementById('timeframeSelect');
         const teacherFilter = document.getElementById('teacherFilter');
+        const studentTypeFilter = document.getElementById('studentTypeFilter'); // New student type filter
         
         // Initialize star ratings
         function initStars() {
@@ -621,6 +642,11 @@ const firebaseConfig = {
             ratingsData.teacher = this.value;
         });
 
+        // Student Type change handler
+        studentTypeSelect.addEventListener('change', function() {
+            ratingsData.studentType = this.value;
+        });
+
         // Submit ratings
         submitBtn.addEventListener('click', function() {
             if (!ratingsData.teacher) {
@@ -630,6 +656,11 @@ const firebaseConfig = {
             
             if (!activitySelect.value) {
                 alert('Please select an activity');
+                return;
+            }
+
+            if (!ratingsData.studentType) {
+                alert('Please select a student type (Junior/Senior)');
                 return;
             }
             
@@ -662,6 +693,7 @@ const firebaseConfig = {
                 timestamp: firebase.database.ServerValue.TIMESTAMP, // Use server timestamp
                 activity: activitySelect.value,
                 teacher: teacherSelect.options[teacherSelect.selectedIndex].text,
+                studentType: studentTypeSelect.value, // Save student type
                 rating: average.toFixed(1),
                 categories: {...categoryRatings}
             };
@@ -682,6 +714,7 @@ const firebaseConfig = {
         function resetForm() {
             teacherSelect.value = '';
             activitySelect.value = '';
+            studentTypeSelect.value = ''; // Reset student type
             pujaRatings.style.display = 'none';
             assemblyRatings.style.display = 'none';
             
@@ -704,11 +737,7 @@ const firebaseConfig = {
 
         // View results
         viewResultsBtn.addEventListener('click', function() {
-            if (ratingsData.history.length === 0) {
-                alert('No ratings data available yet. Please submit some ratings or wait for data to load.');
-                return;
-            }
-            
+            // No alert for empty history, as we want to allow viewing an empty table
             page1.classList.remove('active');
             page2.classList.add('active');
             
@@ -724,6 +753,7 @@ const firebaseConfig = {
         // Event listeners for filters
         timeframeSelect.addEventListener('change', updateResultsPage);
         teacherFilter.addEventListener('change', updateResultsPage);
+        studentTypeFilter.addEventListener('change', updateResultsPage); // New filter listener
 
         // Helper function to get week number
         function getWeekNumber(d) {
@@ -738,11 +768,35 @@ const firebaseConfig = {
         function updateResultsPage() {
             const selectedTimeframe = timeframeSelect.value;
             const selectedTeacher = teacherFilter.value;
+            const selectedStudentType = studentTypeFilter.value; // Get selected student type filter
 
             let filteredHistory = ratingsData.history;
+
+            // Apply teacher filter
             if (selectedTeacher !== 'all') {
                 const teacherFullName = Array.from(teacherSelect.options).find(opt => opt.value === selectedTeacher)?.text;
                 filteredHistory = filteredHistory.filter(entry => entry.teacher === teacherFullName);
+            }
+
+            // Apply student type filter
+            if (selectedStudentType !== 'all') {
+                filteredHistory = filteredHistory.filter(entry => entry.studentType === selectedStudentType);
+            }
+
+            // Apply timeframe filter
+            if (selectedTimeframe !== 'all') {
+                const now = new Date();
+                filteredHistory = filteredHistory.filter(entry => {
+                    const entryDate = new Date(entry.timestamp);
+                    if (selectedTimeframe === 'daily') {
+                        return entryDate.toLocaleDateString('en-US') === now.toLocaleDateString('en-US');
+                    } else if (selectedTimeframe === 'weekly') {
+                        return getWeekNumber(entryDate) === getWeekNumber(now);
+                    } else if (selectedTimeframe === 'monthly') {
+                        return entryDate.getFullYear() === now.getFullYear() && entryDate.getMonth() === now.getMonth();
+                    }
+                    return true; // Should not reach here if 'all' is handled
+                });
             }
 
             // Calculate averages for summary
@@ -752,6 +806,8 @@ const firebaseConfig = {
             let assemblyCount = 0;
             let teacherTotals = {};
             let teacherCounts = {};
+            let studentTypeTotals = {}; // New totals for student types
+            let studentTypeCounts = {}; // New counts for student types
             
             filteredHistory.forEach(entry => {
                 if (entry.activity === 'puja') {
@@ -768,6 +824,13 @@ const firebaseConfig = {
                 }
                 teacherTotals[entry.teacher] += parseFloat(entry.rating);
                 teacherCounts[entry.teacher]++;
+
+                if (!studentTypeTotals[entry.studentType]) {
+                    studentTypeTotals[entry.studentType] = 0;
+                    studentTypeCounts[entry.studentType] = 0;
+                }
+                studentTypeTotals[entry.studentType] += parseFloat(entry.rating);
+                studentTypeCounts[entry.studentType]++;
             });
             
             // Create summary
@@ -785,8 +848,17 @@ const firebaseConfig = {
             for (const teacher in teacherTotals) {
                 summaryList.innerHTML += `
                     <div class="summary-item">
-                        <span class="summary-category">${teacher}:</span>
+                        <span class="summary-category">${teacher} Average:</span>
                         <span>${(teacherTotals[teacher] / teacherCounts[teacher]).toFixed(1)}/10</span>
+                    </div>
+                `;
+            }
+
+            for (const type in studentTypeTotals) {
+                summaryList.innerHTML += `
+                    <div class="summary-item">
+                        <span class="summary-category">${type.charAt(0).toUpperCase() + type.slice(1)} Average:</span>
+                        <span>${(studentTypeTotals[type] / studentTypeCounts[type]).toFixed(1)}/10</span>
                     </div>
                 `;
             }
@@ -802,11 +874,12 @@ const firebaseConfig = {
                         <td class="py-3 px-4">${entry.date}</td>
                         <td class="py-3 px-4">${entry.activity.toUpperCase()}</td>
                         <td class="py-3 px-4">${entry.teacher}</td>
+                        <td class="py-3 px-4">${entry.studentType.charAt(0).toUpperCase() + entry.studentType.slice(1)}</td>
                         <td class="py-3 px-4">
                             <span class="inline-block bg-indigo-100 text-indigo-800 py-1 px-2 rounded">${entry.rating}/10</span>
                         </td>
                         <td class="py-3 px-4">
-                            <button class="text-indigo-600 hover:text-indigo-800 font-medium" onclick="showDetails('${entry.date}', '${entry.activity}', '${entry.teacher}', ${entry.timestamp})">
+                            <button class="text-indigo-600 hover:text-indigo-800 font-medium" onclick="showDetails('${entry.date}', '${entry.activity}', '${entry.teacher}', '${entry.studentType}', ${entry.timestamp})">
                                 View Details
                             </button>
                         </td>
@@ -818,19 +891,104 @@ const firebaseConfig = {
             updateChart(filteredHistory, selectedTimeframe);
         }
 
+        // Update performance chart
+        function updateChart(historyData, timeframe) {
+            let groupedData = {};
+
+            historyData.forEach(entry => {
+                let key;
+                const date = new Date(entry.timestamp); // Use timestamp for accurate grouping
+
+                if (timeframe === 'daily') {
+                    key = date.toLocaleDateString('en-US');
+                } else if (timeframe === 'weekly') {
+                    key = getWeekNumber(date);
+                } else if (timeframe === 'monthly') {
+                    key = date.getFullYear() + '-' + (date.getMonth() + 1).toString().padStart(2, '0');
+                } else if (timeframe === 'all') {
+                    key = 'Overall'; // Single group for 'All Time'
+                }
+
+                if (!groupedData[key]) {
+                    groupedData[key] = { puja: [], assembly: [] };
+                }
+                if (entry.activity === 'puja') {
+                    groupedData[key].puja.push(parseFloat(entry.rating));
+                } else {
+                    groupedData[key].assembly.push(parseFloat(entry.rating));
+                }
+            });
+
+            const labels = Object.keys(groupedData).sort();
+            const pujaAverages = labels.map(key => {
+                const sum = groupedData[key].puja.reduce((a, b) => a + b, 0);
+                return groupedData[key].puja.length > 0 ? (sum / groupedData[key].puja.length) : null;
+            });
+            const assemblyAverages = labels.map(key => {
+                const sum = groupedData[key].assembly.reduce((a, b) => a + b, 0);
+                return groupedData[key].assembly.length > 0 ? (sum / groupedData[key].assembly.length) : null;
+            });
+
+            const ctx = performanceChart.getContext('2d');
+            
+            if (window.performanceChartInst) {
+                window.performanceChartInst.destroy();
+            }
+            
+            window.performanceChartInst = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Puja Performance',
+                            data: pujaAverages,
+                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true
+                        },
+                        {
+                            label: 'Assembly Performance',
+                            data: assemblyAverages,
+                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         // Show details modal
-        window.showDetails = function(date, activity, teacher, timestamp) {
+        window.showDetails = function(date, activity, teacher, studentType, timestamp) {
             const entry = ratingsData.history.find(e => 
                 e.date === date && 
                 e.activity === activity.toLowerCase() && 
                 e.teacher === teacher &&
-                e.timestamp === timestamp // Use timestamp for unique identification
+                e.studentType === studentType && // Include studentType for unique identification
+                e.timestamp === timestamp 
             );
             
             if (entry) {
                 let detailsHtml = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">';
                 detailsHtml += '<div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">';
-                detailsHtml += `<h3 class="text-xl font-bold mb-2">Details for ${activity} on ${date} with ${teacher}</h3>`;
+                detailsHtml += `<h3 class="text-xl font-bold mb-2">Details for ${activity} on ${date} with ${teacher} (${studentType.charAt(0).toUpperCase() + studentType.slice(1)})</h3>`;
                 detailsHtml += `<p class="mb-4"><span class="font-bold">Overall Rating:</span> ${entry.rating}/10</p>`;
                 
                 detailsHtml += '<div class="grid grid-cols-2 gap-4">';
